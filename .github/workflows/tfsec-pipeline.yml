@@ -15,5 +15,8 @@ jobs:
         with:
           tfsec_args: --soft-fail=false
           github_token: ${{ secrets.GITHUB_TOKEN }}
-      - name: Display tfsec results
-        run: cat results.json
+      - name: Upload tfsec results
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfsec-results
+          path: results.json

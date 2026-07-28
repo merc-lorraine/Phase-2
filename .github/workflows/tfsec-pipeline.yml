@@ -11,10 +11,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v3
       - name: Run tfsec
-        uses: aquasecurity/tfsec-pr-commenter-action@v1.2.0
+        uses: aquasecurity/tfsec-action@v1
         with:
           tfsec_args: --soft-fail=false
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Display tfsec results
+        run: cat results.json || true
       - name: Upload tfsec results
         uses: actions/upload-artifact@v4
         with:

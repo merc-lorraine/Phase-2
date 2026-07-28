@@ -9,11 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run tfsec
         uses: aquasecurity/tfsec-action@v1.0.0
         with:
-          tfsec_args: --soft-fail=false
+          soft_fail: false
       - name: Display tfsec results
         run: cat results.json || true
       - name: Upload tfsec results

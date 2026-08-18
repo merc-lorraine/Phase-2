@@ -146,7 +146,7 @@ resource "aws_security_group" "web_server_sg" {
 
   # Outbound internet access is required to install httpd
   # tfsec:ignore:aws-ec2-no-public-egress-sgr
-  
+
   egress {
     description = "Allow outbound traffic for package installation"
     from_port   = 0

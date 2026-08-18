@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   tfsec_scan:
     name: Terraform SAST Scanner
@@ -22,4 +26,9 @@ jobs:
 
       - name: Display tfsec results
         if: always()
-        run: cat results.json
+        run: |
+          if [ -f results.json ]; then
+            cat results.json
+          else
+            echo "No results.json file was generated."
+          fi

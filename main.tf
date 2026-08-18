@@ -47,15 +47,28 @@ resource "aws_route_table_association" "public_association" {
   route_table_id = aws_route_table.public_route_table.id
 }
 
+# KMS ENCRYPTION FOR VPC FLOW LOGS
+
+resource "aws_kms_key" "vpc_flow_logs" {
+  description         = "KMS key for TKH VPC Flow Logs"
+  enable_key_rotation = true
+
+  tags = {
+    Name = "TKH-VPC-Flow-Logs-KMS"
+  }
+}
+
+resource "aws_kms_alias" "vpc_flow_logs" {
+  name          = "alias/tkh-vpc-flow-logs"
+  target_key_id = aws_kms_key.vpc_flow_logs.key_id
+}
+
 # VPC FLOW LOGS
 
 resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
   name              = "/tkh/capstone/vpc-flow-logs"
   retention_in_days = 7
-
-  # CloudWatch encryption is outside the required scope of
-  # this capstone. VPC Flow Logs are enabled for auditing.
-  # tfsec:ignore:aws-cloudwatch-log-group-customer-key
+  kms_key_id        = aws_kms_key.vpc_flow_logs.arn
 
   tags = {
     Name = "TKH-Capstone-VPC-Flow-Logs"
@@ -82,6 +95,8 @@ resource "aws_iam_role" "vpc_flow_log_role" {
   })
 }
 
+# The wildcard is limited to log streams inside this specific log group.
+#tfsec:ignore:aws-iam-no-policy-wildcards
 resource "aws_iam_role_policy" "vpc_flow_log_policy" {
   name = "tkh-capstone-vpc-flow-log-policy"
   role = aws_iam_role.vpc_flow_log_role.id
@@ -125,8 +140,8 @@ resource "aws_security_group" "web_server_sg" {
   description = "Allow HTTP and restricted SSH access"
   vpc_id      = aws_vpc.tkh_fortress.id
 
-  # Public HTTP is explicitly required by the assignment
-  # tfsec:ignore:aws-ec2-no-public-ingress-sgr
+  # Public HTTP is required by the assignment.
+  #tfsec:ignore:aws-ec2-no-public-ingress-sgr
   ingress {
     description = "Allow HTTP from the public internet"
     from_port   = 80
@@ -135,7 +150,6 @@ resource "aws_security_group" "web_server_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  # SSH is restricted to one trusted home IP
   ingress {
     description = "Allow SSH only from home IP"
     from_port   = 22
@@ -144,9 +158,8 @@ resource "aws_security_group" "web_server_sg" {
     cidr_blocks = ["69.203.193.205/32"]
   }
 
-  # Outbound internet access is required to install httpd
-  # tfsec:ignore:aws-ec2-no-public-egress-sgr
-
+  # Public egress is required so user_data can install Apache.
+  #tfsec:ignore:aws-ec2-no-public-egress-sgr
   egress {
     description = "Allow outbound traffic for package installation"
     from_port   = 0
@@ -160,7 +173,7 @@ resource "aws_security_group" "web_server_sg" {
   }
 }
 
-# AMAZON LINUX 2023
+# AMAZON LINUX 2023 AMI
 
 data "aws_ami" "amazon_linux_2023" {
   most_recent = true
@@ -191,13 +204,11 @@ resource "aws_instance" "web_server" {
   vpc_security_group_ids      = [aws_security_group.web_server_sg.id]
   associate_public_ip_address = true
 
-  # Require IMDSv2
   metadata_options {
     http_endpoint = "enabled"
     http_tokens   = "required"
   }
 
-  # Encrypt EC2 root storage
   root_block_device {
     encrypted = true
   }

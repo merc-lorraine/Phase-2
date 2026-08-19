@@ -1,18 +1,34 @@
 name: DevSecOps Quality Gate
+
 on:
   push:
     branches:
       - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   tfsec_scan:
     name: Terraform SAST Scanner
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-        
+
       - name: Run tfsec
         uses: aquasecurity/tfsec-pr-commenter-action@v1.2.0
         with:
           tfsec_args: --soft-fail=false
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Display tfsec results
+        if: always()
+        run: |
+          if [ -f results.json ]; then
+            cat results.json
+          else
+            echo "No results.json file was generated."
+          fi

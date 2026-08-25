@@ -150,7 +150,7 @@ Future improvements could include:
 ## Infrastructure Teardown
 
 After the final demonstration, the infrastructure is destroyed to prevent unnecessary AWS charges.
-
+ 
 ```bash
 terraform destroy
 ```
